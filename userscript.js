@@ -167,11 +167,11 @@ function injectJS(doc){
   var script = doc.createElement('script');
 	script.appendChild(doc.createTextNode('('+ injectedJS +')();'));
 	doc.body.appendChild(script);
-	doc.querySelector("#menuButtonContainer").innerHTML = Object.keys(unsafeWindow.funcLib).reduce(function(str,key){
-    str += `<input type="submit" value="${key}">`;
-    return str;
+	doc.querySelector("#menuButtonContainer").innerHTML = Object.keys(unsafeWindow.funcLib)
+    .reduce(function(str,key){
+    	str += `<input type="submit" value="${key}">`;
+    	return str;
   },"");
-  
 }
 //Append Menu to body tag
 function buildMenu(doc){
@@ -225,15 +225,12 @@ function getFormData(formID){
 	}
   return collection;
 }
-
 function runFunction(e) {
       e.preventDefault();
 			var formData = getFormData("#justAnotherForm");
-    	console.log({formData});	
       var functionName = e.target.value;
-    	console.log(`runFunction is calling ${functionName}.`);
 			var functionResult = unsafeWindow.funcLib[functionName](functionName);
-			console.log({functionResult});
+			console.log({functionName,functionResult,formData});
 }
 
 async function loadMenu(doc){
