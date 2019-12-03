@@ -15,21 +15,18 @@ var settings = {
 	#justAnotherDiv * { box-sizing: border-box; }
 
 	#justAnotherDiv .injectedUIRow {
-  	
  	 	padding: 0;
 		margin:0;
  	 	display: flex;
 	}
-
-.injectedUIColumn {
-	background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid #fff;
-  padding: 0;
-	margin:0;
-  flex-grow: 1;
-  color: #fff;
-}
-
+	.injectedUIColumn {
+		background-color: rgba(0, 0, 0, 0.5);
+  	border: 1px solid #fff;
+  	padding: 0;
+		margin:0;
+  	flex-grow: 1;
+  	color: #fff;
+	}
 	#injectedFullWidth {
   	min-width:100%;
 		width:100%;
@@ -55,12 +52,16 @@ var settings = {
     width:100%;
 		font-size:16px;
   }
-	#justAnotherMenu {
-  	color: #f1f1f1;
-		min-height:100px;
-		min-width:100px;
-  	overflow: hidden;
-	}
+
+  #justAnotherButton{
+    width:98%;
+		margin:auto;
+    padding:0;
+		background-color: #001b6e;
+		font-weight:600;
+  	font-size: 12px;
+  	transform: scale(2, 1);
+  }
 	#justAnotherMenu input[type="submit"], #justAnotherButton {
 		min-width: 10%;
     color: #FFF;
@@ -80,18 +81,7 @@ var settings = {
     margin-right:auto;
     margin-bottom:4px;
   }
-  #justAnotherButton{
-    width:98%;
-		margin:auto;
-    padding:0;
-		background-color: #001b6e;
-		font-weight:600;
-  	font-size: 12px;
-  	transform: scale(2, 1);
-  }
   #justAnotherMenu input {
-    background-color: #FFF;
-    color: #3b4045;
     padding:0;
     margin:1px;
   }
@@ -130,14 +120,7 @@ form:`
 			<input type="range" name="points" min="0" max="10">
 		</div>
 	</div>
-  <div class="flex-container">
-    <input type="submit" value="func1">
-    <input type="submit" value="func2">
-    <input type="submit" value="func3">
-    <input type="submit" value="func4">
-    <input type="submit" value="func5">
-    <input type="submit" value="func6">
-  </div>
+  <div id="menuButtonContainer" class="flex-container"></div>
 </form>
 `,
 toggleBtn:`<button id="justAnotherButton">&uarr;</button>`
@@ -178,12 +161,17 @@ function injectJS(doc){
    		func6: function(param){
         //Customize Function Here
   			return `Completed Running: ${param}`;
-   	 	}
+   	 	}	
   	}; 
   }// END INJECTED JS
   var script = doc.createElement('script');
 	script.appendChild(doc.createTextNode('('+ injectedJS +')();'));
 	doc.body.appendChild(script);
+	doc.querySelector("#menuButtonContainer").innerHTML = Object.keys(unsafeWindow.funcLib).reduce(function(str,key){
+    str += `<input type="submit" value="${key}">`;
+    return str;
+  },"");
+  
 }
 //Append Menu to body tag
 function buildMenu(doc){
@@ -238,12 +226,7 @@ function getFormData(formID){
   return collection;
 }
 
-
-async function loadMenu(doc){
-  injectCSS(doc); 
-  buildMenu(doc);	
-	handleToggle(doc); 
-  function runFunction(e) {
+function runFunction(e) {
       e.preventDefault();
 			var formData = getFormData("#justAnotherForm");
     	console.log({formData});	
@@ -251,14 +234,18 @@ async function loadMenu(doc){
     	console.log(`runFunction is calling ${functionName}.`);
 			var functionResult = unsafeWindow.funcLib[functionName](functionName);
 			console.log({functionResult});
-	}
- 
-	var buttons = doc.querySelectorAll('#justAnotherMenu input[type="submit"]');
+}
+
+async function loadMenu(doc){
+  await injectCSS(doc); 
+  await buildMenu(doc);	
+	await handleToggle(doc); 
+	await injectJS(doc);
+  var buttons = await doc.querySelectorAll('#justAnotherMenu input[type="submit"]');
 	[].forEach.call(buttons, function(el) { 
   	el.addEventListener("click", runFunction) 
   });
-	injectJS(doc);
-
+  console.log("Menu Loaded!");
 }
 'loading' == document.readyState ? 
   console.log("This script is running at document-start time.") : loadMenu(document);
