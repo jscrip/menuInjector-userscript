@@ -11,7 +11,6 @@ var settings = {
 	#justAnotherDiv {
   	all: initial;
 	}
-
 	#justAnotherDiv * { box-sizing: border-box; }
 
 	#justAnotherDiv .injectedUIRow {
@@ -85,6 +84,12 @@ var settings = {
     padding:0;
     margin:1px;
   }
+  #justAnotherMenu textarea {
+    padding:0;
+    margin:1px;
+		width:100%;
+		height:100%;
+  }
 `,
 form:`
 <form id="justAnotherForm" onsubmit="runFunction()">
@@ -115,9 +120,7 @@ form:`
 		
 		</div>
 		<div class="injectedUIColumn">
-			<label for="input-Date-2">Color</label>
-			<input type="color" name="color" value="#ff0000">
-			<input type="range" name="points" min="0" max="10">
+			<textarea id="input-textarea-1" name="input-textarea-1"></textarea>
 		</div>
 	</div>
   <div id="menuButtonContainer" class="flex-container"></div>
