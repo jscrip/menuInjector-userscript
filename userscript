@@ -3,6 +3,12 @@
 // @version  1
 // @grant    none
 // @include       *
+// @exclude       *.js*
+// @exclude       *.css*
+// @exclude       *.jp*
+// @exclude       *.png*
+// @exclude       *.gif*
+// @exclude       *.f*
 // @run-at document-end
 // ==/UserScript==
 
@@ -248,7 +254,8 @@ function runFunction(e) {
 			console.log({functionName,functionResult,formData});
 }
 
-async function loadMenu(doc){
+async function loadMenu(){
+  var doc = document;
   await injectCSS(doc);
   await buildMenu(doc);
 	await handleToggle(doc);
@@ -259,5 +266,14 @@ async function loadMenu(doc){
   });
   console.log("Menu Loaded!");
 }
-'loading' == document.readyState ?
-  console.log("This script is running at document-start time.") : loadMenu(document);
+(function(){
+    if(window.top != window.self){
+
+    return;
+}else{
+ loadMenu(document);
+}
+
+})()
+
+
