@@ -186,6 +186,7 @@ function injectCSS(doc){
 function injectJS(doc){
   //BEGIN INJECTED JS
   function injectedJS () {
+
     function cleanStr(str){
         return str.trim();
     }
@@ -245,13 +246,48 @@ function injectJS(doc){
 				openInNewTab(url);
   			return true;
     	},
-   		func3: function(param){
+   		extractSentences: async function(formData){
         //Customize Function Here
-  			return `Completed Running: ${param}`;
-    	},
-   		func4: function(param){
-        //Customize Function Here
-  			return `Completed Running: ${param}`;
+				var inputSettings = formData.find(function(d){return d.key == "input-Text-1"});
+				var settings = {
+						minWordCount: 4,
+						minLength: 10,
+						maxLength:40,
+					};
+				if(inputSettings.value){
+					var vals = inputSettings.value.split(",");
+					if(vals.length > 0 ){
+						var x = +vals[0];
+						var y = +vals[1];
+						var z = +vals[2];
+						if(!isNaN(x))
+							settings.minWordCount = x;
+						if(!isNaN(y))
+							settings.minLength = y;
+						if(!isNaN(z))
+							settings.maxLength = z;
+					}
+				}
+
+				var sentences = await document.body.innerText.replace(/\[[\w\d!\?\.\s]*\]/gi," ")
+					.replace(/[\n\r\t]+/gim,"[punct]")
+					.replace(/!+\?+|\?+!+/gim,"!?[punct]")
+					.replace(/!+/gim,"![punct]")
+					.replace(/e\.g\.?/gim,"eg")
+					.replace(/u\.s\.?/gim,"US")
+					.replace(/\(c\./gim,"(c")
+					.replace(/ c\./gim," c")
+					.replace(/e\.g\.?/gim,"eg")
+					.replace(/\.(?!\s+\w)/gim,"[dot]")
+					.replace(/\.+/gim,".[punct]")
+					.replace(/\[dot\]/gim,".")
+					.replace(/\?+/gim,"?[punct]")
+					.replace(/\s+/gim," ")
+					.split("[punct]")
+					.filter(str => str.length < settings.maxLength && str.length > settings.minLength && str.split(" ").length >= settings.minWordCount)
+					.map(str => str.replace(/^\W+/i,"").trim());
+				var inputTextArea1 = document.getElementById("input-textarea-1");
+				inputTextArea1.value = sentences.join("\n");
     	},
    		func5: function(param){
         //Customize Function Here
@@ -270,6 +306,9 @@ function injectJS(doc){
   var script = doc.createElement('script');
 	script.appendChild(doc.createTextNode('('+ injectedJS +')();'));
 	doc.body.appendChild(script);
+
+
+
     var win;
     try{
       win = unsafeWindow;
@@ -292,6 +331,7 @@ function buildMenu(doc){
 					${settings.form}
 				</div>
                 ${settings.modal}
+
 				`;
   		doc.body.prepend(menuDock);
 }
@@ -355,6 +395,7 @@ async function loadMenu(){
   await buildMenu(doc);
 	await handleToggle(doc);
 	await injectJS(doc);
+
   var buttons = await doc.querySelectorAll('#justAnotherMenu input[type="submit"]');
 	[].forEach.call(buttons, function(el) {
   	el.addEventListener("click", runFunction)
@@ -390,6 +431,7 @@ async function loadMenu(){
        modal.style.display = "none";
      }
  };
+
 }
 
 })()
