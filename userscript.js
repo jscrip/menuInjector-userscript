@@ -88,10 +88,57 @@ var settings = {
     padding:0;
     margin:1px;
 		width:100%;
-		height:100%;
+		height:70%;
   }
+/* The Modal (background) */
+.justAnotherModal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+.justSomeModalContent {
+	background-color: #0095ff;
+  margin: auto;
+  padding: 2px;
+  border: 1px solid #888;
+  width: 80%;
+	height: 100%;
+}
+.justSomeModalContent textarea {
+  background-color: rgba(25,25,25,0.8);
+	color: #FFF;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+	height: 100%;
+	resize: none;
+  overflow: auto;
+}
+#justAnotherModalBtn{
+	width:100%;
+	text-align:center;
+	margin:auto;
+}
+
 `,
-form:`
+modalBtn:`<input type="button" id="justAnotherModalBtn" name="openModal" value="Open Modal">`,
+modal:`
+<div id="justAnotherModal" class="justAnotherModal">
+  <div class="justSomeModalContent">
+  </div>
+</div>
+`,
+toggleBtn:`<button id="justAnotherButton">&uarr;</button>`
+};
+settings.form = `
 <form id="justAnotherForm" onsubmit="runFunction()">
 	<div class="injectedUIRow">
 		<div class="injectedUIColumn">
@@ -115,39 +162,88 @@ form:`
 				C1<input type="checkbox" name="check1" value="check1">
 			</div>
 			<div class="injectedFullWidth">
-  			C2<input type="checkbox" name="check2" value="check2">
+C2<input type="checkbox" name="check2" value="check2">
 			</div>
-
 		</div>
 		<div class="injectedUIColumn">
+                <div class="injectedFullWidth">
+                 ${settings.modalBtn}
+                </div>
 			<textarea id="input-textarea-1" name="input-textarea-1"></textarea>
 		</div>
 	</div>
   <div id="menuButtonContainer" class="flex-container"></div>
 </form>
-`,
-toggleBtn:`<button id="justAnotherButton">&uarr;</button>`
-
-};
+`;
 //Append Styles to head tag
 function injectCSS(doc){
 	var style = doc.createElement("style");
   style.innerHTML = settings.css;
   doc.head.appendChild(style);
 }
+
 //Append Script to body tag
 function injectJS(doc){
   //BEGIN INJECTED JS
   function injectedJS () {
-    //The function library can be customized. Method names need to match button names.
+    function cleanStr(str){
+        return str.trim();
+    }
+    function listToArray(list){
+        var tests = [",","\t","\n"].reduce(function(tests,testStr){
+            if(list.indexOf(testStr) > -1){
+               tests.push(testStr);
+            }
+            return tests;
+        },[]);
+        if(tests.length == 1){ //if only one test passes, then split by that character.
+          return list.split(tests[0]).map(cleanStr);
+        }else if(tests.length == 2){ //since two tests passed, assume rows are split by new lines, and the other passing test splits columns
+          return list.split(tests[1]).map(function(row){
+              return row.split(tests[0]).map(cleanStr);
+          });
+        }else if(tests.length == 3){ //assume the input is tab delimited if all three tests pass.
+          return list.split("\n").map(function(row){
+              return row.split("\t").map(cleanStr);
+          });
+        }else{
+            return list;
+        }
+    }
+		function openInNewTab(url) {
+			try{
+				  if(cleanStr(url).indexOf("http") == 0){
+						var win = window.open(url, '_blank');
+						return true;
+					}else{
+						alert("URL not recognized.")
+					}
+
+			}catch(e){
+				alert("Error Trying To Open URL on new Tab. Did you put the URL in the text field?")
+			}
+
+
+		}
+      //The function library can be customized. Method names need to match button names.
   	window.funcLib = {
-  		func1: function(param){
+  		processList: function(formData){
       	//Customize Function Here
-  			return `Completed Running: ${param}`;
+            var listSelector = formData.find(function(d){return d.key == "input-textarea-1"});
+            var list = "";
+            if(listSelector){
+                list = listSelector.value;
+            }
+          return listToArray(list);
    		 },
-   		func2: function(param){
+   		openURL: function(formData){
         //Customize Function Here
-  			return `Completed Running: ${param}`;
+				var url = formData.find(function(d){return d.key == "input-Text-1"});
+				if(url.value){
+						url = url.value;
+				}
+				openInNewTab(url);
+  			return true;
     	},
    		func3: function(param){
         //Customize Function Here
@@ -166,6 +262,10 @@ function injectJS(doc){
   			return `Completed Running: ${param}`;
    	 	}
   	};
+		window.funcLib.listToTabs = function(formData){
+				var list = window.funcLib.processList(formData);
+				list.forEach(openInNewTab);
+		}
   }// END INJECTED JS
   var script = doc.createElement('script');
 	script.appendChild(doc.createTextNode('('+ injectedJS +')();'));
@@ -191,6 +291,7 @@ function buildMenu(doc){
 				<div id="justAnotherMenu" style="display:none;">
 					${settings.form}
 				</div>
+                ${settings.modal}
 				`;
   		doc.body.prepend(menuDock);
 }
@@ -236,7 +337,7 @@ function getFormData(formID){
 }
 function runFunction(e) {
       e.preventDefault();
-			var formData = getFormData("#justAnotherForm");
+	  var formData = getFormData("#justAnotherForm");
       var functionName = e.target.value;
         var win;
     try{
@@ -244,8 +345,8 @@ function runFunction(e) {
     }catch(e){
      win = window;
     }
-			var functionResult = win.funcLib[functionName](functionName);
-			console.log({functionName,functionResult,formData});
+	var functionResult = win.funcLib[functionName](formData);
+	console.log({functionName,functionResult,formData});
 }
 
 async function loadMenu(){
@@ -260,14 +361,35 @@ async function loadMenu(){
   });
   console.log("Menu Loaded!");
 }
-(function(){
+(async function(){
     if(window.top != window.self){
 
     return;
 }else{
- loadMenu(document);
+ await loadMenu(document);
+ var modal = document.getElementById("justAnotherModal");
+ var modalBtn = document.getElementById("justAnotherModalBtn");
+ var inputTextArea1 = document.getElementById("input-textarea-1");
+ var modalTextArea = document.createElement("textarea");
+ modal.querySelector(".justSomeModalContent").appendChild(modalTextArea);
+ modalBtn.onclick = function() {
+   modal.style.display = "block";
+	 modalTextArea.value = inputTextArea1.value;
+ }
+ window.onclick = function(event) {
+   if (event.target == modal) {
+		 inputTextArea1.value = modalTextArea.value;
+		 modalTextArea.value = "";
+     modal.style.display = "none";
+   }
+ }
+ document.onkeydown = function(e){
+     if(e.key == "Escape"){
+			 inputTextArea1.value = modalTextArea.value;
+			 modalTextArea.value = "";
+       modal.style.display = "none";
+     }
+ };
 }
 
 })()
-
-
