@@ -3,12 +3,6 @@
 // @version  1
 // @grant    none
 // @include       *
-// @exclude       *.js*
-// @exclude       *.css*
-// @exclude       *.jp*
-// @exclude       *.png*
-// @exclude       *.gif*
-// @exclude       *.f*
 // @run-at document-end
 // ==/UserScript==
 
