@@ -5,7 +5,11 @@
 // @include       *
 // @run-at document-end
 // ==/UserScript==
+(async function(){
+    if(window.top != window.self){
 
+    return;
+}else{
 var injectedForm = document.createElement("form");
     injectedForm.className = "row customResponsiveInjection";
     injectedForm.id = "customResponsiveInjection";
@@ -18,18 +22,15 @@ var modules = [
   {
     cspan:globalCspan,
     content:`
-      <ul>
-        <li><input type="text" name="t1" placeholder="t1"></li>
-        <li><input type="text" name="t2" placeholder="t2"></li>
-        <li><input type="submit" name="sumbit" value="sumbit"></li>
-      </ul>
+        <input class="col-5" type="text" name="t1" placeholder="t1">
+        <input class="col-5" type="text" name="t2" placeholder="t2">
+        <input class="col-1" type="submit" name="sumbit" value="sumbit">
     `
   },{
     cspan:globalCspan,
     content:`
-    <ul>
-      <li><textarea name="textArea1" id="textArea1"></textarea></li>
-    </ul>
+  <input class="col-12" type="submit" value="toggleTextArea">
+  <textarea class="col-12" name="textArea1" id="textArea1"></textarea>
     `
   }
 ];
@@ -62,8 +63,6 @@ function getFormData(formID){
 	}
   return collection;
 }
-
-
 
 document.onkeydown = function(e){
   console.log({key:e.key})
@@ -191,7 +190,6 @@ function injectJS(){
                         }
 					}
 				}
-
 				var sentences = document.body.innerText.replace(/\[[\w\d!\?\.\s]*\]/gi," ")
 					.replace(/[\n\r\t]+/gim,"[punct]")
 					.replace(/!+\?+|\?+!+/gim,"!?[punct]")
@@ -239,18 +237,29 @@ function injectJS(){
         column.className = `col-12 taskButtons`;
         column.innerHTML = Object.keys(win.funcLib)
         .reduce(function(str,key){
-          str += `<input type="submit" value="${key}">`;
+          //The textarea Toggle button is added manually, above the textarea, so skip it.
+          //Any function in the funcLib can be skipped here, and a button will NOT be added to the menu
+          if(key != "toggleTextArea"){
+           str += `<input class='col-2' type="submit" value="${key}">`;
+          }
           return str;
       },"");
     var row = document.querySelector(".customResponsiveInjection");
         row.append(column)
 }
 
-
 var css = `<style>
 .customResponsiveInjection, .customResponsiveInjection * {
   all:revert;
   box-sizing: border-box;
+}
+.customResponsiveInjection .row{
+  width:100%;
+}
+.customResponsiveInjection .row::after {
+  content: "";
+  clear: both;
+  display: table;
 }
 .customResponsiveInjection{
   position: fixed;
@@ -285,6 +294,8 @@ var css = `<style>
 /* Collapse Columns For Small Screens */
 .customResponsiveInjection [class*="col-"] {
   width: 100%;
+  min-height:30px;
+  max-height:200px;
   float: left;
 }
 /*Allow 12 column grid per row on Large screens: */
@@ -321,10 +332,15 @@ var css = `<style>
   border:1px #FFFFFF solid;
 }
 .customResponsiveInjection textarea{
-  width:100%;
-  height:100%;
-  margin:0;
+  min-width:90%;
+  min-height:50px;
+  max-width:90%;
+  max-height:50px;
+  margin:4px 0 0 0;
   padding:0;
+
+  resize:none;
+  overflow:auto;
 }
 .fullscreen{
   position:fixed;
@@ -333,7 +349,10 @@ var css = `<style>
   z-index: 99999999999999999999;
   width:80% !important;
   height:80% !important;
-
+  max-height:80% !important;
+  max-width:80% !important;
+  min-height:80% !important;
+  min-width:80% !important;
 }
 .taskButtons input{
   max-width:33%;
@@ -342,7 +361,6 @@ var css = `<style>
 }
 </style>
 `
-
 function injectCSS(doc){
 	var style = document.createElement("style");
   style.innerHTML = css;
@@ -354,3 +372,5 @@ var buttons = document.querySelectorAll('#customResponsiveInjection input[type="
 [].forEach.call(buttons, function(el) {
   el.addEventListener("click", runFunction)
 });
+}
+})()
