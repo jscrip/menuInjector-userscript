@@ -11,7 +11,7 @@
     return;
 }else{
 var injectedForm = document.createElement("form");
-    injectedForm.className = "row customResponsiveInjection";
+    injectedForm.className = "injectedRowFullWidth customResponsiveInjection";
     injectedForm.id = "customResponsiveInjection";
     injectedForm.setAttribute("onsubmit", "return runFunction()");
     document.body.appendChild(injectedForm);
@@ -29,8 +29,9 @@ var modules = [
   },{
     cspan:globalCspan,
     content:`
-  <input class="col-12" type="submit" value="toggleTextArea">
+  <input class="col-12" type="submit" value="toggleTextArea" id="textToggle">
   <textarea class="col-12" name="textArea1" id="textArea1"></textarea>
+  <input type="submit" value="toggleTextArea" id="injectedModalOverlay">
     `
   }
 ];
@@ -68,12 +69,14 @@ document.onkeydown = function(e){
   console.log({key:e.key})
   var textArea1 = document.querySelector("#textArea1");
   var toggleTextBtn = document.querySelector("#textToggle");
-  var injectedMenu = document.querySelector("#customResponsiveInjection");
+  var injectedMenu = document.querySelector(".customResponsiveInjection");
+  var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
+
     if(e.key == "Escape" && injectedMenu.style.display == "none"){
       injectedMenu.style.display = "block";
     }else if(e.key == "Escape" && textArea1.className != ""){
       textArea1.className = ""
-      toggleTextBtn.value = "Maximize Textarea"
+      injectedModalOverlay.className = "";
     }else if (e.key == "Escape" && textArea1.className == ""){
       injectedMenu.style.display = "none";
     }
@@ -138,12 +141,13 @@ function injectJS(){
         toggleTextArea:    function toggleTextArea(){
   var textArea1 = document.querySelector("#textArea1");
   var toggleTextBtn = document.querySelector("#textToggle");
-  if(textArea1.className == "fullscreen"){
+  var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
+  if(textArea1.className == "injectedModalTextArea"){
      textArea1.className = ""
-     toggleTextBtn.value = "Maximize Textarea";
+     injectedModalOverlay.className = "";
   }else{
-    textArea1.className = "fullscreen"
-    toggleTextBtn.value = "Minimize Textarea";
+    textArea1.className = "injectedModalTextArea"
+    injectedModalOverlay.className = "customInjectedShow";
   }
   return false;
 },
@@ -253,7 +257,7 @@ var css = `<style>
   all:revert;
   box-sizing: border-box;
 }
-.customResponsiveInjection .row{
+.customResponsiveInjection .injectedRowFullWidth{
   width:100%;
 }
 .customResponsiveInjection .row::after {
@@ -271,7 +275,7 @@ var css = `<style>
   color: #f1f1f1;
   min-height:5px;
   width:100%;
-  font-size:16px;
+  font-size:12px !important;
 }
 .customResponsiveInjection::after {
   content: "";
@@ -334,25 +338,43 @@ var css = `<style>
 .customResponsiveInjection textarea{
   min-width:90%;
   min-height:50px;
-  max-width:90%;
-  max-height:50px;
-  margin:4px 0 0 0;
-  padding:0;
-
   resize:none;
   overflow:auto;
 }
-.fullscreen{
+.injectedModalTextArea{
   position:fixed;
-  top:10%;
-  left:10%;
-  z-index: 99999999999999999999;
-  width:80% !important;
-  height:80% !important;
-  max-height:80% !important;
-  max-width:80% !important;
-  min-height:80% !important;
-  min-width:80% !important;
+  top:0;
+  left:0;
+  z-index: 999999999;
+  margin:2%;
+  width:90vw;
+  height:90vh;
+  min-width:90vw;
+  min-height:90vh;
+  max-width:90vw;
+  max-height:90vh;
+}
+#injectedModalOverlay{
+  position:fixed;
+  top:0;
+  left:0;
+  z-index: 99999999;
+  margin:0;
+  padding:0;
+  width:100vw;
+  height:100vh;
+  background-color:#000000;
+  color:#000000;
+  display:none;
+  border:0px #000000 solid !important;
+}
+.customInjectedShow{
+ display:block !important;
+ border:0;
+}
+.customInjectedShow:hover{
+   border:0px #000000 solid !important;
+ background-color:#000000 !important;
 }
 .taskButtons input{
   max-width:33%;
@@ -372,5 +394,7 @@ var buttons = document.querySelectorAll('#customResponsiveInjection input[type="
 [].forEach.call(buttons, function(el) {
   el.addEventListener("click", runFunction)
 });
+var injectedDivOverlay = document.querySelector("#injectedModalOverlay");
+    injectedDivOverlay.addEventListener("click", runFunction)
 }
 })()
