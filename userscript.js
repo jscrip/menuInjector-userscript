@@ -6,184 +6,92 @@
 // @run-at document-end
 // ==/UserScript==
 
-var settings = {
-	css:`
-	#justAnotherDiv {
-  	all: initial;
-	}
-	#justAnotherDiv * { box-sizing: border-box; }
+var injectedForm = document.createElement("form");
+    injectedForm.className = "row customResponsiveInjection";
+    injectedForm.id = "customResponsiveInjection";
+    injectedForm.setAttribute("onsubmit", "return runFunction()");
+    document.body.appendChild(injectedForm);
 
-	#justAnotherDiv .injectedUIRow {
- 	 	padding: 0;
-		margin:0;
- 	 	display: flex;
-	}
-	.injectedUIColumn {
-		background-color: rgba(0, 0, 0, 0.5);
-  	border: 1px solid #fff;
-  	padding: 0;
-		margin:0;
-  	flex-grow: 1;
-  	color: #fff;
-	}
-	#injectedFullWidth {
-  	min-width:100%;
-		width:100%;
-	}
-	#justAnotherDiv .flex-container {
-  	display: flex;
-  	flex-wrap: wrap;
-		width:100%;
-	}
-	#justAnotherDiv input{
-		min-width:20px;
-		min-height:20px;
-	}
-	#justAnotherDiv {
-  	position: fixed;
-		z-index:999999999;
-		bottom:0;
-		left:0;
-    padding:2px;
-  	background: rgba(0,0,0,0.5);
-  	color: #f1f1f1;
-		min-height:5px;
-    width:100%;
-		font-size:16px;
+var globalCspan = 6;
+//columnized module template
+var modules = [
+  {
+    cspan:globalCspan,
+    content:`
+      <ul>
+        <li><input type="text" name="t1" placeholder="t1"></li>
+        <li><input type="text" name="t2" placeholder="t2"></li>
+        <li><input type="submit" name="sumbit" value="sumbit"></li>
+      </ul>
+    `
+  },{
+    cspan:globalCspan,
+    content:`
+    <ul>
+      <li><textarea name="textArea1" id="textArea1"></textarea></li>
+    </ul>
+    `
   }
-
-  #justAnotherButton{
-    width:98%;
-		margin:auto;
-    padding:0;
-		background-color: #001b6e;
-		font-weight:600;
-  	font-size: 12px;
-  	transform: scale(2, 1);
-  }
-	#justAnotherMenu input[type="submit"], #justAnotherButton {
-		min-width: 10%;
-    color: #FFF;
-    background-color: #0095ff;
-    display:block;
-		text-align:center;
-		margin:auto;
-		border:1px #000000 solid;
-	}
-	#justAnotherMenu input[type="submit"]:hover, #justAnotherButton:hover {
-    background-color: #40b0ff;
-		border:1px #FFFFFF solid;
-	}
-  #justAnotherMenu input[type="submit"]{
-  	padding:4px;
-    margin-left:auto;
-    margin-right:auto;
-    margin-bottom:4px;
-  }
-  #justAnotherMenu input {
-    padding:0;
-    margin:1px;
-  }
-  #justAnotherMenu textarea {
-    padding:0;
-    margin:1px;
-		width:100%;
-		height:70%;
-  }
-/* The Modal (background) */
-.justAnotherModal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  padding-top: 100px; /* Location of the box */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0,0,0); /* Fallback color */
-  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+];
+function runFunction(e) {
+    e.preventDefault();
+	  var formData = getFormData("#customResponsiveInjection");
+      var functionName = e.target.value;
+      var win;
+    try{
+      win = unsafeWindow;
+    }catch(e){
+     win = window;
+    }
+	var functionResult = win.funcLib[functionName](formData);
+	console.log({functionName,functionResult,formData});
 }
-.justSomeModalContent {
-	background-color: #0095ff;
-  margin: auto;
-  padding: 2px;
-  border: 1px solid #888;
-  width: 80%;
-	height: 100%;
-}
-.justSomeModalContent textarea {
-  background-color: rgba(25,25,25,0.8);
-	color: #FFF;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-	height: 100%;
-	resize: none;
-  overflow: auto;
-}
-#justAnotherModalBtn{
-	width:100%;
-	text-align:center;
-	margin:auto;
+function getFormData(formID){
+	var form = document.querySelector(formID);
+  var formData = new FormData(form);
+  var collection = [];
+  var it = formData.entries();
+ 	var result = it.next();
+	while (!result.done) {
+    var pair = result.value;
+ 		collection.push({
+    	key:pair[0],
+      value:pair[1]
+    });
+ 	result = it.next();
+	}
+  return collection;
 }
 
-`,
-modalBtn:`<input type="button" id="justAnotherModalBtn" name="openModal" value="Open Modal">`,
-modal:`
-<div id="justAnotherModal" class="justAnotherModal">
-  <div class="justSomeModalContent">
-  </div>
-</div>
-`,
-toggleBtn:`<button id="justAnotherButton">&uarr;</button>`
+
+
+document.onkeydown = function(e){
+  console.log({key:e.key})
+  var textArea1 = document.querySelector("#textArea1");
+  var toggleTextBtn = document.querySelector("#textToggle");
+  var injectedMenu = document.querySelector("#customResponsiveInjection");
+    if(e.key == "Escape" && injectedMenu.style.display == "none"){
+      injectedMenu.style.display = "block";
+    }else if(e.key == "Escape" && textArea1.className != ""){
+      textArea1.className = ""
+      toggleTextBtn.value = "Maximize Textarea"
+    }else if (e.key == "Escape" && textArea1.className == ""){
+      injectedMenu.style.display = "none";
+    }
 };
-settings.form = `
-<form id="justAnotherForm" onsubmit="runFunction()">
-	<div class="injectedUIRow">
-		<div class="injectedUIColumn">
-			<div class="injectedFullWidth">
-				<input type="text" id="input-Text-1" name="input-Text-1" placeholder="text input">
-			</div>
-			<div class="injectedFullWidth">
-				<label for="input-Date-1">D1</label>
-    		<input type="date" id="input-Date-1" name="input-Date-1">
-			</div>
-			<div class="injectedFullWidth">
-				<label for="input-Date-2">D2</label>
-  			<input type="date" id="input-Date-2" name="input-Date-2">
-			</div>
-		</div>
-		<div class="injectedUIColumn">
-			<div class="injectedFullWidth">
-				<strong>CheckBoxes</strong>
-			</div>
-			<div class="injectedFullWidth">
-				C1<input type="checkbox" name="check1" value="check1">
-			</div>
-			<div class="injectedFullWidth">
-C2<input type="checkbox" name="check2" value="check2">
-			</div>
-		</div>
-		<div class="injectedUIColumn">
-                <div class="injectedFullWidth">
-                 ${settings.modalBtn}
-                </div>
-			<textarea id="input-textarea-1" name="input-textarea-1"></textarea>
-		</div>
-	</div>
-  <div id="menuButtonContainer" class="flex-container"></div>
-</form>
-`;
-//Append Styles to head tag
-function injectCSS(doc){
-	var style = doc.createElement("style");
-  style.innerHTML = settings.css;
-  doc.head.appendChild(style);
-}
+
+function loadMod(mod){
+  var column = document.createElement("div");
+      column.className = `col-${mod.cspan}`;
+      column.innerHTML = mod.content;
+  var row = document.querySelector(".customResponsiveInjection");
+      row.append(column)
+};
+
+modules.forEach(loadMod);
 
 //Append Script to body tag
-function injectJS(doc){
+function injectJS(){
   //BEGIN INJECTED JS
   function injectedJS () {
 
@@ -228,9 +136,21 @@ function injectJS(doc){
 		}
       //The function library can be customized. Method names need to match button names.
   	window.funcLib = {
+        toggleTextArea:    function toggleTextArea(){
+  var textArea1 = document.querySelector("#textArea1");
+  var toggleTextBtn = document.querySelector("#textToggle");
+  if(textArea1.className == "fullscreen"){
+     textArea1.className = ""
+     toggleTextBtn.value = "Maximize Textarea";
+  }else{
+    textArea1.className = "fullscreen"
+    toggleTextBtn.value = "Minimize Textarea";
+  }
+  return false;
+},
   		processList: function(formData){
       	//Customize Function Here
-            var listSelector = formData.find(function(d){return d.key == "input-textarea-1"});
+            var listSelector = formData.find(function(d){return d.key == "textArea1"});
             var list = "";
             if(listSelector){
                 list = listSelector.value;
@@ -239,7 +159,7 @@ function injectJS(doc){
    		 },
    		openURL: function(formData){
         //Customize Function Here
-				var url = formData.find(function(d){return d.key == "input-Text-1"});
+				var url = formData.find(function(d){return d.key == "t1"});
 				if(url.value){
 						url = url.value;
 				}
@@ -248,11 +168,11 @@ function injectJS(doc){
     	},
    		extractSentences: async function(formData){
         //Customize Function Here
-				var inputSettings = formData.find(function(d){return d.key == "input-Text-1"});
+				var inputSettings = formData.find(function(d){return d.key == "t1"});
 				var settings = {
 						minWordCount: 4,
-						minLength: 10,
-						maxLength:40,
+						minLength: 30,
+						maxLength:130,
 					};
 				if(inputSettings.value){
 					var vals = inputSettings.value.split(",");
@@ -260,16 +180,19 @@ function injectJS(doc){
 						var x = +vals[0];
 						var y = +vals[1];
 						var z = +vals[2];
-						if(!isNaN(x))
+						if(!isNaN(x)){
 							settings.minWordCount = x;
-						if(!isNaN(y))
+                        }
+						if(!isNaN(y)){
 							settings.minLength = y;
-						if(!isNaN(z))
+                        }
+						if(!isNaN(z)){
 							settings.maxLength = z;
+                        }
 					}
 				}
 
-				var sentences = await document.body.innerText.replace(/\[[\w\d!\?\.\s]*\]/gi," ")
+				var sentences = document.body.innerText.replace(/\[[\w\d!\?\.\s]*\]/gi," ")
 					.replace(/[\n\r\t]+/gim,"[punct]")
 					.replace(/!+\?+|\?+!+/gim,"!?[punct]")
 					.replace(/!+/gim,"![punct]")
@@ -286,7 +209,7 @@ function injectJS(doc){
 					.split("[punct]")
 					.filter(str => str.length < settings.maxLength && str.length > settings.minLength && str.split(" ").length >= settings.minWordCount)
 					.map(str => str.replace(/^\W+/i,"").trim());
-				var inputTextArea1 = document.getElementById("input-textarea-1");
+				var inputTextArea1 = document.getElementById("textArea1");
 				inputTextArea1.value = sentences.join("\n");
     	},
    		func5: function(param){
@@ -303,135 +226,131 @@ function injectJS(doc){
 				list.forEach(openInNewTab);
 		}
   }// END INJECTED JS
-  var script = doc.createElement('script');
-	script.appendChild(doc.createTextNode('('+ injectedJS +')();'));
-	doc.body.appendChild(script);
-
-
-
+  var script = document.createElement('script');
+	script.appendChild(document.createTextNode('('+ injectedJS +')();'));
+	document.body.appendChild(script);
     var win;
     try{
       win = unsafeWindow;
     }catch(e){
      win = window;
     }
-	doc.querySelector("#menuButtonContainer").innerHTML = Object.keys(win.funcLib)
-    .reduce(function(str,key){
-    	str += `<input type="submit" value="${key}">`;
-    	return str;
-  },"");
-}
-//Append Menu to body tag
-function buildMenu(doc){
-  var menuDock = doc.createElement("div");
-  		menuDock.id = "justAnotherDiv";
-  		menuDock.innerHTML = `
-				${settings.toggleBtn}
-				<div id="justAnotherMenu" style="display:none;">
-					${settings.form}
-				</div>
-                ${settings.modal}
-
-				`;
-  		doc.body.prepend(menuDock);
-}
-//show/hide menu
-function toggleMenu(doc,toggle){
-		var content = doc.querySelector("#justAnotherMenu");
-    	if (content.style.display === "grid") {
-      	content.style.display = "none";
-        toggle.innerHTML = "&uarr;";
-    	} else {
-     		content.style.display = "grid";
-        toggle.innerHTML = "&darr;";
-    	};
-}
-function handleToggle(doc){
-  var toggle = doc.querySelector("#justAnotherButton");
-  		toggle.addEventListener("click", function() {
-    	this.classList.toggle("active");
-    	toggleMenu(doc,toggle);
-  		});
-  doc.onkeydown = function(e){
-	 if(e.key == "ArrowUp" || e.key == "ArrowDown"){
-     e.preventDefault();
-		 toggleMenu(doc,toggle);
-	 }
-	};
-}
-function getFormData(formID){
-	var form = document.querySelector(formID);
-  var formData = new FormData(form);
-  var collection = [];
-  var it = formData.entries();
- 	var result = it.next();
-	while (!result.done) {
-    var pair = result.value;
- 		collection.push({
-    	key:pair[0],
-      value:pair[1]
-    });
- 	result = it.next();
-	}
-  return collection;
-}
-function runFunction(e) {
-      e.preventDefault();
-	  var formData = getFormData("#justAnotherForm");
-      var functionName = e.target.value;
-        var win;
-    try{
-      win = unsafeWindow;
-    }catch(e){
-     win = window;
-    }
-	var functionResult = win.funcLib[functionName](formData);
-	console.log({functionName,functionResult,formData});
+    var column = document.createElement("div");
+        column.className = `col-12 taskButtons`;
+        column.innerHTML = Object.keys(win.funcLib)
+        .reduce(function(str,key){
+          str += `<input type="submit" value="${key}">`;
+          return str;
+      },"");
+    var row = document.querySelector(".customResponsiveInjection");
+        row.append(column)
 }
 
-async function loadMenu(){
-  var doc = document;
-  await injectCSS(doc);
-  await buildMenu(doc);
-	await handleToggle(doc);
-	await injectJS(doc);
 
-  var buttons = await doc.querySelectorAll('#justAnotherMenu input[type="submit"]');
-	[].forEach.call(buttons, function(el) {
-  	el.addEventListener("click", runFunction)
-  });
-  console.log("Menu Loaded!");
+var css = `<style>
+.customResponsiveInjection, .customResponsiveInjection * {
+  all:revert;
+  box-sizing: border-box;
 }
-(async function(){
-    if(window.top != window.self){
-
-    return;
-}else{
- await loadMenu(document);
- var modal = document.getElementById("justAnotherModal");
- var modalBtn = document.getElementById("justAnotherModalBtn");
- var inputTextArea1 = document.getElementById("input-textarea-1");
- var modalTextArea = document.createElement("textarea");
- modal.querySelector(".justSomeModalContent").appendChild(modalTextArea);
- modalBtn.onclick = function() {
-   modal.style.display = "block";
-	 modalTextArea.value = inputTextArea1.value;
- }
- window.onclick = function(event) {
-   if (event.target == modal) {
-		 inputTextArea1.value = modalTextArea.value;
-		 modalTextArea.value = "";
-     modal.style.display = "none";
-   }
- }
- document.onkeydown = function(e){
-     if(e.key == "Escape"){
-			 inputTextArea1.value = modalTextArea.value;
-			 modalTextArea.value = "";
-       modal.style.display = "none";
-     }
- };
-
+.customResponsiveInjection{
+  position: fixed;
+  z-index:999999999;
+  bottom:0;
+  left:0;
+  padding:2px;
+  background: rgba(0,0,0,0.5);
+  color: #f1f1f1;
+  min-height:5px;
+  width:100%;
+  font-size:16px;
+}
+.customResponsiveInjection::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+.customResponsiveInjection ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width:100%;
+}
+.customResponsiveInjection li {
+  padding:0;
+  width:96%;
+  margin:1%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
 }
 
-})()
+/* Collapse Columns For Small Screens */
+.customResponsiveInjection [class*="col-"] {
+  width: 100%;
+  float: left;
+}
+/*Allow 12 column grid per row on Large screens: */
+@media only screen and (min-width: 600px) {
+ .customResponsiveInjection .col-1 {width: 8.33%;}
+ .customResponsiveInjection .col-2 {width: 16.66%;}
+ .customResponsiveInjection .col-3 {width: 25%;}
+ .customResponsiveInjection .col-4 {width: 33.33%;}
+ .customResponsiveInjection .col-5 {width: 41.66%;}
+ .customResponsiveInjection .col-6 {width: 50%;}
+ .customResponsiveInjection .col-7 {width: 58.33%;}
+ .customResponsiveInjection .col-8 {width: 66.66%;}
+ .customResponsiveInjection .col-9 {width: 75%;}
+ .customResponsiveInjection .col-10 {width: 83.33%;}
+ .customResponsiveInjection .col-11 {width: 91.66%;}
+ .customResponsiveInjection .col-12 {width: 100%;}
+}
+.customResponsiveInjection input{
+  width:100%;
+  margin:0;
+  padding:0;
+}
+.customResponsiveInjection input[type="submit"], .customResponsiveInjection input[type="button"] {
+  min-width: 10%;
+  color: #FFF;
+  background-color: #0095ff;
+  display:block;
+  text-align:center;
+  margin:auto;
+  border:1px #000000 solid;
+}
+.customResponsiveInjection input[type="submit"]:hover, .customResponsiveInjection input[type="button"]:hover {
+  background-color: #40b0ff;
+  border:1px #FFFFFF solid;
+}
+.customResponsiveInjection textarea{
+  width:100%;
+  height:100%;
+  margin:0;
+  padding:0;
+}
+.fullscreen{
+  position:fixed;
+  top:10%;
+  left:10%;
+  z-index: 99999999999999999999;
+  width:80% !important;
+  height:80% !important;
+
+}
+.taskButtons input{
+  max-width:33%;
+  min-width:25%;
+  display: initial !important;
+}
+</style>
+`
+
+function injectCSS(doc){
+	var style = document.createElement("style");
+  style.innerHTML = css;
+  document.head.appendChild(style);
+}
+injectJS();
+injectCSS(document);
+var buttons = document.querySelectorAll('#customResponsiveInjection input[type="submit"]');
+[].forEach.call(buttons, function(el) {
+  el.addEventListener("click", runFunction)
+});
