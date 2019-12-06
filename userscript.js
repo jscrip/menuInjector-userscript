@@ -42,6 +42,7 @@ var modules = [
     `
   }
 ];
+
 function runFunction(e) {
     e.preventDefault();
 	  var formData = getFormData("#customResponsiveInjection");
@@ -52,7 +53,20 @@ function runFunction(e) {
     }catch(e){
      win = window;
     }
-	var functionResult = win.funcLib[functionName](formData);
+    var functionResult;
+    //Read back details & assign placeholders to inputs on mouseover
+    if(e.type == "mouseover"){
+     //Select & reset all text and number inputs
+    var inputs = document.querySelectorAll("#customResponsiveInjection input[type='text'], #customResponsiveInjection input[type='number'],#customResponsiveInjection textarea");
+        [].forEach.call(inputs, function(el) {
+           el.setAttribute("placeholder","");
+       });
+    functionResult = win.funcLib[functionName](false);
+    }else{
+    //If runFunction was called by an event other than mouseover, then run the function
+    functionResult = win.funcLib[functionName](formData);
+    }
+
 	console.log({functionName,functionResult,formData});
 }
 function getFormData(formID){
@@ -129,6 +143,7 @@ function injectJS(){
         }
     }
 		function openInNewTab(url) {
+
 			try{
 				  if(cleanStr(url).indexOf("http") == 0){
 						var win = window.open(url, '_blank');
@@ -143,22 +158,36 @@ function injectJS(){
 
 
 		}
+       function getHelp(inputs){
+       //update ui to provide feedback - what does the function expect? Which inputs are mapped to each controlled variable?
+                Object.keys(inputs).forEach(function(key){
+                   var input = document.querySelector(`#customResponsiveInjection *[name='${key}']`);
+                   var nestObjectKey = Object.keys(inputs[key])[0];
+                       input.setAttribute("placeholder",`${nestObjectKey} = ${inputs[key][nestObjectKey]}`)
+                });
+               return null;
+       }
       //The function library can be customized. Method names need to match button names.
   	window.funcLib = {
-        toggleTextArea:    function toggleTextArea(){
-  var textArea1 = document.querySelector("#textArea1");
-  var toggleTextBtn = document.querySelector("#textToggle");
-  var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
-  if(textArea1.className == "injectedModalTextArea"){
-     textArea1.className = ""
-     injectedModalOverlay.className = "";
-  }else{
-    textArea1.className = "injectedModalTextArea"
-    injectedModalOverlay.className = "customInjectedShow";
-  }
-  return false;
-},
+        toggleTextArea:    function toggleTextArea(formData){
+        if(!formData){return null};
+        var textArea1 = document.querySelector("#textArea1");
+        var toggleTextBtn = document.querySelector("#textToggle");
+        var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
+        if(textArea1.className == "injectedModalTextArea"){
+          textArea1.className = ""
+          injectedModalOverlay.className = "";
+        }else{
+         textArea1.className = "injectedModalTextArea"
+         injectedModalOverlay.className = "customInjectedShow";
+        }
+         return false;
+      },
   		processList: function(formData){
+            var inputs = {
+              textArea1:{list:"https://google.com?q=yoyo\nhttps://duckduckgo.com?q=yoyo"},
+            }
+            if(!formData){return getHelp(inputs)};
       	//Customize Function Here
             var listSelector = formData.find(function(d){return d.key == "textArea1"});
             var list = "";
@@ -168,6 +197,10 @@ function injectJS(){
           return listToArray(list);
    		 },
    		openURL: function(formData){
+         var inputs = {
+           a:{list:"https://duckduckgo.com?q=yoyo"},
+         }
+         if(!formData){return getHelp(inputs)};
         //Customize Function Here
 				var url = formData.find(function(d){return d.key == "a"});
 				if(url.value){
@@ -177,12 +210,21 @@ function injectJS(){
   			return true;
     	},
    		extractSentences: async function(formData){
-        //Customize Function Here
-                var inputs = ["x","y","z"];
+            /* 1) map each property to an input (Dynamic Module Input Mapping - allow UI control of injected JavaScript functions).
+               2) The nested object provides data for the placeholder (Dynamic UI feedback - get help on mouseover)
+               3) the nested object values can be used as default values for demo/tests of the module.
+            */
+            var inputs = {
+              x:{minWordCount:4},
+              y:{minLength:80},
+              z:{PmaxLength:60}
+            }
+            if(!formData){return getHelp(inputs)};
+            //Customize Function Here
                 var settings = {minWordCount:4,minLength:80,maxLength:160};
 				var inputSettings = formData.forEach(function(d){
                     var k = d.key;
-                    if(inputs.indexOf(k) > -1){
+                    if(Object.keys(inputs).indexOf(k) > -1){
                        var v = +d.value;
                        if(!isNaN(v) && v != 0){
                         if(k == "x"){
@@ -216,16 +258,31 @@ function injectJS(){
 				var inputTextArea1 = document.getElementById("textArea1");
 				inputTextArea1.value = sentences.join("\n");
     	},
-   		func5: function(param){
-        //Customize Function Here
-  			return `Completed Running: ${param}`;
+   		func5: function(formData){
+                //update ui to provide feedback - what does the function expect? Which inputs are mapped to each controlled variable?
+                var inputs = {
+                    a:{url:"https://duckduckgo.com"},
+                    b:{param:"p=2"},
+                    c:{param:"q=yoyo"},
+                    x:{length:10},
+                    y:{width:10},
+                    z:{height:10},
+                }
+                if(!formData){return getHelp(inputs)};
+            //Customize Function Here
+  			return `Completed Running: ${formData}`;
     	},
-   		func6: function(param){
-        //Customize Function Here
-  			return `Completed Running: ${param}`;
+   		func6: function(formData){
+            if(!formData){return "starter function template"};
+            //Customize Function Here
+  			return `Completed Running: ${formData}`;
    	 	}
   	};
 		window.funcLib.listToTabs = function(formData){
+                var inputs = {
+                  textArea1:{list:"https://google.com?q=yoyo\nhttps://duckduckgo.com?q=yoyo"},
+                }
+                if(!formData){return getHelp(inputs)};
 				var list = window.funcLib.processList(formData);
 				list.forEach(openInNewTab);
 		}
@@ -345,7 +402,7 @@ var css = `<style>
   border:1px #FFFFFF solid;
 }
 .customResponsiveInjection textarea{
-  min-width:90%;
+  width:100%;
   min-height:50px;
   resize:none;
   overflow:auto;
@@ -402,6 +459,7 @@ injectCSS(document);
 var buttons = document.querySelectorAll('#customResponsiveInjection input[type="submit"]');
 [].forEach.call(buttons, function(el) {
   el.addEventListener("click", runFunction)
+  el.addEventListener("mouseover", runFunction)
 });
 var injectedDivOverlay = document.querySelector("#injectedModalOverlay");
     injectedDivOverlay.addEventListener("click", runFunction)
