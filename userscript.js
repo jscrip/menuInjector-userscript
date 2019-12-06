@@ -258,6 +258,17 @@ var css = `<style>
 .customResponsiveInjection, .customResponsiveInjection * {
   all:revert;
   box-sizing: border-box;
+  margin:0px !important;
+  padding:0px !important;
+  border:0px !important;
+  outline:0px !important;
+  display:block;
+  width:unset;
+  min-width:unset;
+  max-width:unset;
+  height:unset;
+  min-height:unset;
+  max-height:unset;
 }
 .customResponsiveInjection .injectedRowFullWidth{
   width:100%;
@@ -284,18 +295,6 @@ var css = `<style>
   clear: both;
   display: table;
 }
-.customResponsiveInjection ul {
-  list-style-type: none;
-  margin: 0;
-  padding: 0;
-  width:100%;
-}
-.customResponsiveInjection li {
-  padding:0;
-  width:96%;
-  margin:1%;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-}
 
 /* Collapse Columns For Small Screens */
 .customResponsiveInjection [class*="col-"] {
@@ -320,9 +319,14 @@ var css = `<style>
  .customResponsiveInjection .col-12 {width: 100%;}
 }
 .customResponsiveInjection input{
-  width:100%;
+  max-width:100%;
+  min-width:25%;
   margin:0;
   padding:0;
+  outline: 1px solid gray;
+  outline-offset: -1px;
+  border:0;
+
 }
 .customResponsiveInjection input[type="submit"], .customResponsiveInjection input[type="button"] {
   min-width: 10%;
@@ -331,7 +335,10 @@ var css = `<style>
   display:block;
   text-align:center;
   margin:auto;
-  border:1px #000000 solid;
+  outline: 1px solid black;
+  outline-offset: -1px;
+  border:0;
+
 }
 .customResponsiveInjection input[type="submit"]:hover, .customResponsiveInjection input[type="button"]:hover {
   background-color: #40b0ff;
