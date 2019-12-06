@@ -22,9 +22,16 @@ var modules = [
   {
     cspan:globalCspan,
     content:`
-        <input class="col-5" type="text" name="t1" placeholder="t1">
-        <input class="col-5" type="text" name="t2" placeholder="t2">
-        <input class="col-1" type="submit" name="sumbit" value="sumbit">
+        <div class="injectedRowFullWidth">
+          <input class="col-4" type="text" name="a" placeholder="a">
+          <input class="col-4" type="text" name="b" placeholder="b">
+          <input class="col-4" type="text" name="c" placeholder="c">
+        </div>
+        <div class="injectedRowFullWidth">
+          <input class="col-4" type="number" name="x" placeholder="x">
+          <input class="col-4" type="number" name="y" placeholder="y">
+          <input class="col-4" type="number" name="z" placeholder="z">
+        </div>
     `
   },{
     cspan:globalCspan,
@@ -162,7 +169,7 @@ function injectJS(){
    		 },
    		openURL: function(formData){
         //Customize Function Here
-				var url = formData.find(function(d){return d.key == "t1"});
+				var url = formData.find(function(d){return d.key == "a"});
 				if(url.value){
 						url = url.value;
 				}
@@ -171,29 +178,24 @@ function injectJS(){
     	},
    		extractSentences: async function(formData){
         //Customize Function Here
-				var inputSettings = formData.find(function(d){return d.key == "t1"});
-				var settings = {
-						minWordCount: 4,
-						minLength: 30,
-						maxLength:130,
-					};
-				if(inputSettings.value){
-					var vals = inputSettings.value.split(",");
-					if(vals.length > 0 ){
-						var x = +vals[0];
-						var y = +vals[1];
-						var z = +vals[2];
-						if(!isNaN(x)){
-							settings.minWordCount = x;
+                var inputs = ["x","y","z"];
+                var settings = {minWordCount:4,minLength:80,maxLength:160};
+				var inputSettings = formData.forEach(function(d){
+                    var k = d.key;
+                    if(inputs.indexOf(k) > -1){
+                       var v = +d.value;
+                       if(!isNaN(v) && v != 0){
+                        if(k == "x"){
+                           settings.minWordCount = v;
+                        }else if(k == "y"){
+                           settings.minLength = v;
+                        }else if(k == "z"){
+                           settings.maxLength = v;
                         }
-						if(!isNaN(y)){
-							settings.minLength = y;
-                        }
-						if(!isNaN(z)){
-							settings.maxLength = z;
-                        }
-					}
-				}
+                       }
+                    }
+                });
+                alert(JSON.stringify(settings));
 				var sentences = document.body.innerText.replace(/\[[\w\d!\?\.\s]*\]/gi," ")
 					.replace(/[\n\r\t]+/gim,"[punct]")
 					.replace(/!+\?+|\?+!+/gim,"!?[punct]")
