@@ -200,10 +200,15 @@
         function mapInputsToSettings(inputs,formData) {
           return Object.keys(inputs).reduce(function(settings,inputKey) {
             if(inputs[inputKey]){
-              var vKey = Object.keys(inputs[inputKey])[0];
-              if(vKey){
-                settings[vKey] = inputs[inputKey][vKey];
-              }}
+                var vKey = Object.keys(inputs[inputKey])[0];
+                if(vKey){
+                  if(formData[inputKey]){
+                      settings[vKey] = formData[inputKey];
+                  }else{
+                  settings[vKey] = inputs[inputKey][vKey];
+                }}
+              }
+
             return settings;
           },{})
         }
