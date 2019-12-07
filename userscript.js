@@ -5,23 +5,26 @@
 // @include       *
 // @run-at document-end
 // ==/UserScript==
-(async function(){
-    if(window.top != window.self){
-
-    return;
-}else{
-var injectedForm = document.createElement("form");
+(async function() {
+  if (window.top != window.self) { //only run on the parent page, not embedded pages/objects
+    /*
+     This script is general-use and is designed to run on most websites.
+     Since userscripts aren't typically designed for this purpose,
+     there is a need for an additional check to make sure it only runs on the main page, and NOT linked media files and iframes.
+    */
+    return; //do not run on embedded pages/objects.
+  } else {
+    var injectedForm = document.createElement("form");
     injectedForm.className = "injectedRowFullWidth customResponsiveInjection";
     injectedForm.id = "customResponsiveInjection";
     injectedForm.setAttribute("onsubmit", "return runFunction()");
     document.body.appendChild(injectedForm);
 
-var globalCspan = 6;
-//columnized module template
-var modules = [
-  {
-    cspan:globalCspan,
-    content:`
+    var globalCspan = 6;
+    //columnized module template
+    var modules = [{
+      cspan: globalCspan,
+      content: `
         <div class="injectedRowFullWidth">
           <input class="col-4" type="text" name="a" placeholder="a">
           <input class="col-4" type="text" name="b" placeholder="b">
@@ -33,285 +36,315 @@ var modules = [
           <input class="col-4" type="number" name="z" placeholder="z">
         </div>
     `
-  },{
-    cspan:globalCspan,
-    content:`
+    }, {
+      cspan: globalCspan,
+      content: `
   <input class="col-12" type="submit" value="toggleTextArea" id="textToggle">
   <textarea class="col-12" name="textArea1" id="textArea1"></textarea>
   <input type="submit" value="toggleTextArea" id="injectedModalOverlay">
     `
-  }
-];
-
-function runFunction(e) {
-    e.preventDefault();
-	  var formData = getFormData("#customResponsiveInjection");
+    }];
+    function clearPlacerHolders(){
+      var inputs = document.querySelectorAll("#customResponsiveInjection input[type='text'], #customResponsiveInjection input[type='number'],#customResponsiveInjection textarea");
+      [].forEach.call(inputs, function(el) {
+        el.setAttribute("placeholder", "");
+      });
+    }
+    function runFunction(e) {
+      e.preventDefault();
+      var formData = getFormData("#customResponsiveInjection");
       var functionName = e.target.value;
       var win;
-    try{
-      win = unsafeWindow;
-    }catch(e){
-     win = window;
+      try {
+        win = unsafeWindow;
+      } catch (e) {
+        win = window;
+      }
+      var functionResult;
+      //Read back details & assign placeholders to inputs on mouseover
+      if (e.type == "mouseover") {
+        //Select & reset all text and number inputs
+        clearPlacerHolders();
+        functionResult = win.funcLib[functionName](false);
+      } else {
+        //If runFunction was called by an event other than mouseover, then run the function
+        functionResult = win.funcLib[functionName](formData);
+      }
+
     }
-    var functionResult;
-    //Read back details & assign placeholders to inputs on mouseover
-    if(e.type == "mouseover"){
-     //Select & reset all text and number inputs
-    var inputs = document.querySelectorAll("#customResponsiveInjection input[type='text'], #customResponsiveInjection input[type='number'],#customResponsiveInjection textarea");
-        [].forEach.call(inputs, function(el) {
-           el.setAttribute("placeholder","");
-       });
-    functionResult = win.funcLib[functionName](false);
-    }else{
-    //If runFunction was called by an event other than mouseover, then run the function
-    functionResult = win.funcLib[functionName](formData);
+
+    function getFormData(formID) {
+      var form = document.querySelector(formID);
+      var formData = new FormData(form);
+      var data = {};
+      var it = formData.entries();
+      var result = it.next();
+      while (!result.done) {
+        var pair = result.value;
+        data[pair[0]] = pair[1];
+        result = it.next();
+      }
+      return data;
     }
 
-	console.log({functionName,functionResult,formData});
-}
-function getFormData(formID){
-	var form = document.querySelector(formID);
-  var formData = new FormData(form);
-  var collection = [];
-  var it = formData.entries();
- 	var result = it.next();
-	while (!result.done) {
-    var pair = result.value;
- 		collection.push({
-    	key:pair[0],
-      value:pair[1]
-    });
- 	result = it.next();
-	}
-  return collection;
-}
+    document.onkeydown = function(e) {
+      var injectedMenu = document.querySelector(".customResponsiveInjection");
+      var textArea1 = document.querySelector("#textArea1");
+      if (e.key == "Escape" && injectedMenu.style.display == "none") {
+        injectedMenu.style.display = "block";
+      } else if (e.key == "Escape" && textArea1.className != "") {
+        var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
+        textArea1.className = ""
+        injectedModalOverlay.className = "";
+      } else if (e.key == "Escape" && textArea1.className == "") {
+        injectedMenu.style.display = "none";
+      }
+    };
 
-document.onkeydown = function(e){
-  console.log({key:e.key})
-  var textArea1 = document.querySelector("#textArea1");
-  var toggleTextBtn = document.querySelector("#textToggle");
-  var injectedMenu = document.querySelector(".customResponsiveInjection");
-  var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
-
-    if(e.key == "Escape" && injectedMenu.style.display == "none"){
-      injectedMenu.style.display = "block";
-    }else if(e.key == "Escape" && textArea1.className != ""){
-      textArea1.className = ""
-      injectedModalOverlay.className = "";
-    }else if (e.key == "Escape" && textArea1.className == ""){
-      injectedMenu.style.display = "none";
-    }
-};
-
-function loadMod(mod){
-  var column = document.createElement("div");
+    function loadMod(mod) {
+      var column = document.createElement("div");
       column.className = `col-${mod.cspan}`;
       column.innerHTML = mod.content;
-  var row = document.querySelector(".customResponsiveInjection");
+      var row = document.querySelector(".customResponsiveInjection");
       row.append(column)
-};
+    };
 
-modules.forEach(loadMod);
+    modules.forEach(loadMod);
 
-//Append Script to body tag
-function injectJS(){
-  //BEGIN INJECTED JS
-  function injectedJS () {
+    //Append Script to body tag
+    function injectJS() {
+      //BEGIN INJECTED JS
+      function injectedJS() {
 
-    function cleanStr(str){
-        return str.trim();
-    }
-    function listToArray(list){
-        var tests = [",","\t","\n"].reduce(function(tests,testStr){
-            if(list.indexOf(testStr) > -1){
-               tests.push(testStr);
+        function cleanStr(str) {
+          return str.trim();
+        }
+
+        function listToArray(settings) {
+          var list = settings.list;
+          var tests = [",", "\t", "\n"].reduce(function(tests, testStr) {
+            if (list.indexOf(testStr) > -1) {
+              tests.push(testStr);
             }
             return tests;
-        },[]);
-        if(tests.length == 1){ //if only one test passes, then split by that character.
-          return list.split(tests[0]).map(cleanStr);
-        }else if(tests.length == 2){ //since two tests passed, assume rows are split by new lines, and the other passing test splits columns
-          return list.split(tests[1]).map(function(row){
+          }, []);
+          if (tests.length == 1) { //if only one test passes, then split by that character.
+            return list.split(tests[0]).map(cleanStr);
+          } else if (tests.length == 2) { //since two tests passed, assume rows are split by new lines, and the other passing test splits columns
+            return list.split(tests[1]).map(function(row) {
               return row.split(tests[0]).map(cleanStr);
-          });
-        }else if(tests.length == 3){ //assume the input is tab delimited if all three tests pass.
-          return list.split("\n").map(function(row){
+            });
+          } else if (tests.length == 3) { //assume the input is tab delimited if all three tests pass.
+            return list.split("\n").map(function(row) {
               return row.split("\t").map(cleanStr);
-          });
-        }else{
+            });
+          } else {
             return list;
+          }
         }
-    }
-		function openInNewTab(url) {
 
-			try{
-				  if(cleanStr(url).indexOf("http") == 0){
-						var win = window.open(url, '_blank');
-						return true;
-					}else{
-						alert("URL not recognized.")
-					}
-
-			}catch(e){
-				alert("Error Trying To Open URL on new Tab. Did you put the URL in the text field?")
-			}
-
-
-		}
-       function getHelp(inputs){
-       //update ui to provide feedback - what does the function expect? Which inputs are mapped to each controlled variable?
-                Object.keys(inputs).forEach(function(key){
-                   var input = document.querySelector(`#customResponsiveInjection *[name='${key}']`);
-                   var nestObjectKey = Object.keys(inputs[key])[0];
-                       input.setAttribute("placeholder",`${nestObjectKey} = ${inputs[key][nestObjectKey]}`)
-                });
-               return null;
-       }
-      //The function library can be customized. Method names need to match button names.
-  	window.funcLib = {
-        toggleTextArea:    function toggleTextArea(formData){
-        if(!formData){return null};
-        var textArea1 = document.querySelector("#textArea1");
-        var toggleTextBtn = document.querySelector("#textToggle");
-        var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
-        if(textArea1.className == "injectedModalTextArea"){
-          textArea1.className = ""
-          injectedModalOverlay.className = "";
-        }else{
-         textArea1.className = "injectedModalTextArea"
-         injectedModalOverlay.className = "customInjectedShow";
+        function openInNewTab(url) {
+          try {
+            if (cleanStr(url).indexOf("http") == 0) {
+              var win = window.open(url, '_blank');
+              return true;
+            } else {
+              alert("URL not recognized.")
+            }
+          } catch (e) {
+            alert("Error Trying To Open URL on new Tab. Did you put the URL in the text field?")
+          }
         }
-         return false;
-      },
-  		processList: function(formData){
+        function getNodeText(el){
+          var el = document.querySelector(el);
+          return el.innerText || "";
+        }
+
+        function getSentences(str,settings){
+          return str.replace(/\[[\w\d!\?\.\s]*\]/gi, " ")
+            .replace(/[\n\r\t]+/gim, "[punct]")
+            .replace(/!+\?+|\?+!+/gim, "!?[punct]")
+            .replace(/!+/gim, "![punct]")
+            .replace(/e\.g\.?/gim, "eg")
+            .replace(/u\.s\.?/gim, "US")
+            .replace(/\(c\./gim, "(c")
+            .replace(/ c\./gim, " c")
+            .replace(/e\.g\.?/gim, "eg")
+            .replace(/\.(?!\s+\w)/gim, "[dot]")
+            .replace(/\.+/gim, ".[punct]")
+            .replace(/\[dot\]/gim, ".")
+            .replace(/\?+/gim, "?[punct]")
+            .replace(/\s+/gim, " ")
+            .split("[punct]")
+            .filter(str => str.length < settings.maxLength && str.length > settings.minLength && str.split(" ").length >= settings.minWordCount)
+            .map(str => str.replace(/^\W+/i, "").trim());
+        }
+
+        function getHelp(inputs) {
+          //update ui to provide feedback - what does the function expect? Which inputs are mapped to each controlled variable?
+          Object.keys(inputs).forEach(function(key) {
+            var input = document.querySelector(`#customResponsiveInjection *[name='${key}']`);
+            var nestObjectKey = Object.keys(inputs[key])[0];
+            input.setAttribute("placeholder", `${nestObjectKey} = ${inputs[key][nestObjectKey]}`)
+          });
+          return null;
+        }
+
+        function updateDisplay(selector,str){
+          var inputTextArea1 = document.getElementById(selector);
+          inputTextArea1.value = str;
+        };
+
+        //Override function defaults if UI inputs are provided.
+
+        function mapInputsToSettings(inputs,formData) {
+          return Object.keys(inputs).reduce(function(settings,inputKey) {
+            if(inputs[inputKey]){
+              var vKey = Object.keys(inputs[inputKey])[0];
+              if(vKey){
+                settings[vKey] = inputs[inputKey][vKey];
+              }}
+            return settings;
+          },{})
+        }
+
+        //The function library can be customized. Method names need to match button names.
+        window.funcLib = {
+          toggleTextArea: function toggleTextArea(formData) {
+            if (!formData) {
+              return null;
+            };
+            var textArea1 = document.querySelector("#textArea1");
+            var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
+            if (textArea1.className == "injectedModalTextArea") {
+              textArea1.className = ""
+              injectedModalOverlay.className = "";
+            } else {
+              textArea1.className = "injectedModalTextArea"
+              injectedModalOverlay.className = "customInjectedShow";
+            }
+            return false;
+          },
+          processList: function(formData) {
             var inputs = {
-              textArea1:{list:"https://google.com?q=yoyo\nhttps://duckduckgo.com?q=yoyo"},
+              textArea1: {
+                list: "https://google.com?q=yoyo\nhttps://duckduckgo.com?q=yoyo"
+              }
             }
-            if(!formData){return getHelp(inputs)};
-      	//Customize Function Here
-            var listSelector = formData.find(function(d){return d.key == "textArea1"});
-            var list = "";
-            if(listSelector){
-                list = listSelector.value;
+            if (!formData) { return getHelp(inputs) };
+            var settings = mapInputsToSettings(inputs,formData);
+            //Customize Function Here
+
+            return listToArray(settings);
+          },
+          openURL: function(formData) {
+            var inputs = {
+              a: {
+                url: "https://duckduckgo.com?q=yoyo"
+              }
             }
-          return listToArray(list);
-   		 },
-   		openURL: function(formData){
-         var inputs = {
-           a:{list:"https://duckduckgo.com?q=yoyo"},
-         }
-         if(!formData){return getHelp(inputs)};
-        //Customize Function Here
-				var url = formData.find(function(d){return d.key == "a"});
-				if(url.value){
-						url = url.value;
-				}
-				openInNewTab(url);
-  			return true;
-    	},
-   		extractSentences: async function(formData){
+            if (!formData) { return getHelp(inputs) };
+            var settings = mapInputsToSettings(inputs,formData);
+            //Customize Function Here
+            openInNewTab(settings.url);
+          },
+          extractSentences: async function(formData) {
             /* 1) map each property to an input (Dynamic Module Input Mapping - allow UI control of injected JavaScript functions).
                2) The nested object provides data for the placeholder (Dynamic UI feedback - get help on mouseover)
                3) the nested object values can be used as default values for demo/tests of the module.
+               4) The input mapper will only replace the inputs that contain values from the UI
             */
             var inputs = {
-              x:{minWordCount:4},
-              y:{minLength:80},
-              z:{PmaxLength:60}
+              x: {minWordCount:4},
+              y: {minLength: 80},
+              z: {maxLength: 160}
             }
-            if(!formData){return getHelp(inputs)};
+            if (!formData) { return getHelp(inputs) };
             //Customize Function Here
-                var settings = {minWordCount:4,minLength:80,maxLength:160};
-				var inputSettings = formData.forEach(function(d){
-                    var k = d.key;
-                    if(Object.keys(inputs).indexOf(k) > -1){
-                       var v = +d.value;
-                       if(!isNaN(v) && v != 0){
-                        if(k == "x"){
-                           settings.minWordCount = v;
-                        }else if(k == "y"){
-                           settings.minLength = v;
-                        }else if(k == "z"){
-                           settings.maxLength = v;
-                        }
-                       }
-                    }
-                });
-                alert(JSON.stringify(settings));
-				var sentences = document.body.innerText.replace(/\[[\w\d!\?\.\s]*\]/gi," ")
-					.replace(/[\n\r\t]+/gim,"[punct]")
-					.replace(/!+\?+|\?+!+/gim,"!?[punct]")
-					.replace(/!+/gim,"![punct]")
-					.replace(/e\.g\.?/gim,"eg")
-					.replace(/u\.s\.?/gim,"US")
-					.replace(/\(c\./gim,"(c")
-					.replace(/ c\./gim," c")
-					.replace(/e\.g\.?/gim,"eg")
-					.replace(/\.(?!\s+\w)/gim,"[dot]")
-					.replace(/\.+/gim,".[punct]")
-					.replace(/\[dot\]/gim,".")
-					.replace(/\?+/gim,"?[punct]")
-					.replace(/\s+/gim," ")
-					.split("[punct]")
-					.filter(str => str.length < settings.maxLength && str.length > settings.minLength && str.split(" ").length >= settings.minWordCount)
-					.map(str => str.replace(/^\W+/i,"").trim());
-				var inputTextArea1 = document.getElementById("textArea1");
-				inputTextArea1.value = sentences.join("\n");
-    	},
-   		func5: function(formData){
-                //update ui to provide feedback - what does the function expect? Which inputs are mapped to each controlled variable?
-                var inputs = {
-                    a:{url:"https://duckduckgo.com"},
-                    b:{param:"p=2"},
-                    c:{param:"q=yoyo"},
-                    x:{length:10},
-                    y:{width:10},
-                    z:{height:10},
-                }
-                if(!formData){return getHelp(inputs)};
+            var settings = mapInputsToSettings(inputs,formData);
+            var text = getNodeText("body");
+            var sentences = getSentences(text, settings);
+            var sentenceListStr = sentences.join("\n");
+            updateDisplay("textArea1",sentenceListStr);
+          },
+          func5: function(formData) {
+            //update ui to provide feedback - what does the function expect? Which inputs are mapped to each controlled variable?
+            var inputs = {
+              a: {
+                url: "https://duckduckgo.com"
+              },
+              b: {
+                param: "p=2"
+              },
+              c: {
+                param: "q=yoyo"
+              },
+              x: {
+                length: 10
+              },
+              y: {
+                width: 10
+              },
+              z: {
+                height: 10
+              },
+            }
+            if (!formData) {
+              return getHelp(inputs)
+            };
+            var settings = mapInputsToSettings(inputs,formData);
             //Customize Function Here
-  			return `Completed Running: ${formData}`;
-    	},
-   		func6: function(formData){
-            if(!formData){return "starter function template"};
+            return `Completed Running: ${formData}`;
+          },
+          func6: function(formData) {
+            if (!formData) {
+              return "starter function template"
+            };
             //Customize Function Here
-  			return `Completed Running: ${formData}`;
-   	 	}
-  	};
-		window.funcLib.listToTabs = function(formData){
-                var inputs = {
-                  textArea1:{list:"https://google.com?q=yoyo\nhttps://duckduckgo.com?q=yoyo"},
-                }
-                if(!formData){return getHelp(inputs)};
-				var list = window.funcLib.processList(formData);
-				list.forEach(openInNewTab);
-		}
-  }// END INJECTED JS
-  var script = document.createElement('script');
-	script.appendChild(document.createTextNode('('+ injectedJS +')();'));
-	document.body.appendChild(script);
-    var win;
-    try{
-      win = unsafeWindow;
-    }catch(e){
-     win = window;
-    }
-    var column = document.createElement("div");
-        column.className = `col-12 taskButtons`;
-        column.innerHTML = Object.keys(win.funcLib)
-        .reduce(function(str,key){
+            return `Completed Running: ${formData}`;
+          }
+        };
+        window.funcLib.listToTabs = function(formData) {
+          var inputs = {
+            textArea1: {
+              list: "https://google.com?q=yoyo\nhttps://duckduckgo.com?q=yoyo"
+            },
+          }
+          if (!formData) {
+            return getHelp(inputs)
+          };
+          var list = window.funcLib.processList(formData);
+          list.forEach(openInNewTab);
+        }
+      } // END INJECTED JS
+
+      //START THE SCRIPT
+      var script = document.createElement('script');
+      script.appendChild(document.createTextNode('(' + injectedJS + ')();'));
+      document.body.appendChild(script);
+      var win;
+      try {
+        win = unsafeWindow;
+      } catch (e) {
+        win = window;
+      }
+      var column = document.createElement("div");
+      column.className = `col-12 taskButtons`;
+      //reduce function library keys to a string of buttons
+      column.innerHTML = Object.keys(win.funcLib)
+        .reduce(function(str, key) {
           //The textarea Toggle button is added manually, above the textarea, so skip it.
           //Any function in the funcLib can be skipped here, and a button will NOT be added to the menu
-          if(key != "toggleTextArea"){
-           str += `<input class='col-2' type="submit" value="${key}">`;
+          if (key != "toggleTextArea") {
+            str += `<input class='col-2' type="submit" value="${key}">`;
           }
           return str;
-      },"");
-    var row = document.querySelector(".customResponsiveInjection");
-        row.append(column)
-}
+        }, "");
+      var row = document.querySelector(".customResponsiveInjection");
+      row.append(column)
+    }
 
-var css = `<style>
+    var css = `<style>
 .customResponsiveInjection, .customResponsiveInjection * {
   all:revert;
   box-sizing: border-box;
@@ -449,19 +482,19 @@ var css = `<style>
 }
 </style>
 `
-function injectCSS(doc){
-	var style = document.createElement("style");
-  style.innerHTML = css;
-  document.head.appendChild(style);
-}
-injectJS();
-injectCSS(document);
-var buttons = document.querySelectorAll('#customResponsiveInjection input[type="submit"]');
-[].forEach.call(buttons, function(el) {
-  el.addEventListener("click", runFunction)
-  el.addEventListener("mouseover", runFunction)
-});
-var injectedDivOverlay = document.querySelector("#injectedModalOverlay");
+    function injectCSS(doc) {
+      var style = document.createElement("style");
+      style.innerHTML = css;
+      document.head.appendChild(style);
+    }
+    injectJS();
+    injectCSS(document);
+    var buttons = document.querySelectorAll('#customResponsiveInjection input[type="submit"]');
+    [].forEach.call(buttons, function(el) {
+      el.addEventListener("click", runFunction)
+      el.addEventListener("mouseover", runFunction)
+    });
+    var injectedDivOverlay = document.querySelector("#injectedModalOverlay");
     injectedDivOverlay.addEventListener("click", runFunction)
-}
+  }
 })()
