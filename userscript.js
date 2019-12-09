@@ -26,6 +26,10 @@
       cspan: globalCspan,
       content: `
         <div class="injectedRowFullWidth">
+          <input class="col-6" type="submit" value="clearInputs" id="clearInputs">
+          <input class="col-6" type="submit" value="clearInputs" id="clearInputs">
+        </div>
+        <div class="injectedRowFullWidth">
           <input class="col-4" type="text" name="a" placeholder="a">
           <input class="col-4" type="text" name="b" placeholder="b">
           <input class="col-4" type="text" name="c" placeholder="c">
@@ -39,8 +43,17 @@
     }, {
       cspan: globalCspan,
       content: `
-  <input class="col-12" type="submit" value="toggleTextArea" id="textToggle">
-  <textarea class="col-12" name="textArea1" id="textArea1"></textarea>
+      <div class="injectedRowFullWidth">
+        <input class="col-4" type="submit" value="toggleTextArea" id="textToggle"  data="1">
+        <input class="col-4" type="submit" value="toggleTextArea" id="textToggle2" data="2">
+        <input class="col-4" type="submit" value="toggleTextArea" id="textToggle3"  data="3">
+      </div>
+      <div class="injectedRowFullWidth">
+        <textarea class="col-4" name="textArea1" id="textArea1"></textarea>
+        <textarea class="col-4" name="textArea2" id="textArea2"></textarea>
+        <textarea class="col-4" name="textArea3" id="textArea3"></textarea>
+      </div>
+
   <input type="submit" value="toggleTextArea" id="injectedModalOverlay">
     `
     }];
@@ -50,10 +63,12 @@
         el.setAttribute("placeholder", "");
       });
     }
+
     function runFunction(e) {
       e.preventDefault();
       var formData = getFormData("#customResponsiveInjection");
       var functionName = e.target.value;
+
       var win;
       try {
         win = unsafeWindow;
@@ -63,11 +78,16 @@
       var functionResult;
       //Read back details & assign placeholders to inputs on mouseover
       if (e.type == "mouseover") {
+        console.log({"target":e.target});
         //Select & reset all text and number inputs
         clearPlacerHolders();
         functionResult = win.funcLib[functionName](false);
       } else {
         //If runFunction was called by an event other than mouseover, then run the function
+        var dataAttribute = e.target.getAttribute("data");
+        if(dataAttribute){
+          formData.dataAttribute = dataAttribute;
+        }
         functionResult = win.funcLib[functionName](formData);
       }
 
@@ -89,15 +109,16 @@
 
     document.onkeydown = function(e) {
       var injectedMenu = document.querySelector(".customResponsiveInjection");
-      var textArea1 = document.querySelector("#textArea1");
+      var textArea = document.querySelector(".injectedModalTextArea");
+
+      var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
       if (e.key == "Escape" && injectedMenu.style.display == "none") {
         injectedMenu.style.display = "block";
-      } else if (e.key == "Escape" && textArea1.className != "") {
-        var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
-        textArea1.className = ""
-        injectedModalOverlay.className = "";
-      } else if (e.key == "Escape" && textArea1.className == "") {
+      } else if (e.key == "Escape" && !textArea) {
         injectedMenu.style.display = "none";
+      } else if (e.key == "Escape" && textArea) {
+        textArea.className = textArea.className.replace(" injectedModalTextArea","");
+        injectedModalOverlay.className = "";
       }
     };
 
@@ -115,32 +136,42 @@
     function injectJS() {
       //BEGIN INJECTED JS
       function injectedJS() {
-
+        function clearInputs(){
+          document.getElementById("customResponsiveInjection").reset();
+        }
         function cleanStr(str) {
           return str.trim();
         }
-
-        function listToArray(settings) {
-          var list = settings.list;
-          var tests = [",", "\t", "\n"].reduce(function(tests, testStr) {
-            if (list.indexOf(testStr) > -1) {
+        function testListFormat(listAsString){
+          return [",", "\t", "\n"].reduce(function(tests, testStr) {
+            if (listAsString.indexOf(testStr) > -1) {
               tests.push(testStr);
             }
             return tests;
           }, []);
-          if (tests.length == 1) { //if only one test passes, then split by that character.
-            return list.split(tests[0]).map(cleanStr);
-          } else if (tests.length == 2) { //since two tests passed, assume rows are split by new lines, and the other passing test splits columns
-            return list.split(tests[1]).map(function(row) {
-              return row.split(tests[0]).map(cleanStr);
-            });
-          } else if (tests.length == 3) { //assume the input is tab delimited if all three tests pass.
-            return list.split("\n").map(function(row) {
-              return row.split("\t").map(cleanStr);
-            });
-          } else {
-            return list;
+        }
+        function listToArray(settings) {
+
+          var list = settings.list;
+          var tests = testListFormat(list);
+          switch(tests.length) {
+            case 1:
+              return list.split(tests[0]).map(cleanStr);
+              break;
+            case 2:
+              return list.split(tests[1]).map(function(row) {
+                return ;
+              });
+              break;
+            case 3:
+              return list.split("\n").map(function(row) {
+                return row.split("\t").map(cleanStr);
+              });
+              break;
+            default:
+             return list;
           }
+
         }
 
         function openInNewTab(url) {
@@ -215,17 +246,23 @@
 
         //The function library can be customized. Method names need to match button names.
         window.funcLib = {
+          clearInputs: function(formData){
+            if (!formData) {
+               return null;
+            };
+            clearInputs()},
           toggleTextArea: function toggleTextArea(formData) {
             if (!formData) {
               return null;
             };
-            var textArea1 = document.querySelector("#textArea1");
+            var dataAttribute = formData.dataAttribute;
+            var textArea = document.querySelector("#textArea"+dataAttribute) || document.querySelector(".injectedModalTextArea");
             var injectedModalOverlay = document.querySelector("#injectedModalOverlay");
-            if (textArea1.className == "injectedModalTextArea") {
-              textArea1.className = ""
+            if (textArea.className.indexOf("injectedModalTextArea") > -1) {
+              textArea.className = textArea.className.replace(" injectedModalTextArea","");
               injectedModalOverlay.className = "";
             } else {
-              textArea1.className = "injectedModalTextArea"
+              textArea.className += " injectedModalTextArea";
               injectedModalOverlay.className = "customInjectedShow";
             }
             return false;
@@ -239,8 +276,9 @@
             if (!formData) { return getHelp(inputs) };
             var settings = mapInputsToSettings(inputs,formData);
             //Customize Function Here
-
-            return listToArray(settings);
+            var list = listToArray(settings);
+            console.log({processedList:list});
+            return list;
           },
           openURL: function(formData) {
             var inputs = {
@@ -300,13 +338,6 @@
             var settings = mapInputsToSettings(inputs,formData);
             //Customize Function Here
             return `Completed Running: ${formData}`;
-          },
-          func6: function(formData) {
-            if (!formData) {
-              return "starter function template"
-            };
-            //Customize Function Here
-            return `Completed Running: ${formData}`;
           }
         };
         window.funcLib.listToTabs = function(formData) {
@@ -335,12 +366,15 @@
       }
       var column = document.createElement("div");
       column.className = `col-12 taskButtons`;
+      var skipNames = ["toggleTextArea","clearInputs"]
       //reduce function library keys to a string of buttons
       column.innerHTML = Object.keys(win.funcLib)
         .reduce(function(str, key) {
           //The textarea Toggle button is added manually, above the textarea, so skip it.
           //Any function in the funcLib can be skipped here, and a button will NOT be added to the menu
-          if (key != "toggleTextArea") {
+          if (!skipNames.some(function(skipName){
+            return skipName == key;
+          })) {
             str += `<input class='col-2' type="submit" value="${key}">`;
           }
           return str;
@@ -367,6 +401,7 @@
 }
 .customResponsiveInjection .injectedRowFullWidth{
   width:100%;
+  min-height: 30px;
 }
 .customResponsiveInjection .row::after {
   content: "";
@@ -378,7 +413,8 @@
   z-index:999999999;
   bottom:0;
   left:0;
-  padding:2px;
+  padding:0;
+  margin:0;
   background: rgba(0,0,0,0.5);
   color: #f1f1f1;
   min-height:5px;
@@ -397,13 +433,18 @@
   min-height:30px;
   max-height:200px;
   float: left;
+  outline: 1px solid black;
+  outline-offset: -1px;
+  border: 0;
+  padding:0;
+  margin:0;
 }
 /*Allow 12 column grid per row on Large screens: */
 @media only screen and (min-width: 600px) {
  .customResponsiveInjection .col-1 {width: 8.33%;}
  .customResponsiveInjection .col-2 {width: 16.66%;}
  .customResponsiveInjection .col-3 {width: 25%;}
- .customResponsiveInjection .col-4 {width: 33.33%;}
+ .customResponsiveInjection .col-4 {width: 33.3%;}
  .customResponsiveInjection .col-5 {width: 41.66%;}
  .customResponsiveInjection .col-6 {width: 50%;}
  .customResponsiveInjection .col-7 {width: 58.33%;}
@@ -416,12 +457,6 @@
 .customResponsiveInjection input{
   max-width:100%;
   min-width:25%;
-  margin:0;
-  padding:0;
-  outline: 1px solid gray;
-  outline-offset: -1px;
-  border:0;
-
 }
 .customResponsiveInjection input[type="submit"], .customResponsiveInjection input[type="button"] {
   min-width: 10%;
@@ -440,7 +475,6 @@
   border:1px #FFFFFF solid;
 }
 .customResponsiveInjection textarea{
-  width:100%;
   min-height:50px;
   resize:none;
   overflow:auto;
