@@ -186,11 +186,41 @@
             alert("Error Trying To Open URL on new Tab. Did you put the URL in the text field?")
           }
         }
-        function getNodeText(el){
+        function getAttributeKeys(el){
+          //console.log("getAttributeKeys",{el, attributeKeys:Object.values(el.attributes)});
+          if(typeof el == "object"){
+            //console.log("el is object...")
+            if(Object.values(el.attributes).length > 0){
+                //console.log("Attribute length is > 1...");
+                return [...Object.values(el.attributes)].map(function(node) {return node.name})
+            }
+          }
+          return {};
+        }
+        function processProps(el) {
+          var propList = getAttributeKeys(el);
+            function processProp (obj,prop) {
+              var value = el.getAttribute(prop);
+              value ? obj[prop] = value : null;
+              return obj;
+            };
+            var elData = propList.length > 0 ? propList.reduce(processProp,{}) : {};
+            //var innerHTML = el.innerHTML || false;
+            var text = cleanStr(el.innerText) || false;
+          if(propList.length > 0)
+          return {...elData, text};
+        }
+        function getNodeData(el){
           var el = document.querySelector(el);
           return el.innerText || "";
         }
+        function processNodeList(selector){
+        return [...document.querySelectorAll(selector)].reduce(function(data,el){
+            data.push(processProps(el));
+            return data;
+          },[]);
 
+        }
         function getSentences(str,settings){
           return str.replace(/\[[\w\d!\?\.\s]*\]/gi, " ")
             .replace(/[\n\r\t]+/gim, "[punct]")
@@ -226,6 +256,42 @@
           inputTextArea1.value = str;
         };
 
+        var downloadCSV = (data) => {
+        	var csvDownload = jsonToCSV(data);
+        	var exportFilename = "data.csv";
+        	var csvData = new Blob([csvDownload], {
+        		type: 'text/csv;charset=utf-8;'
+        	});
+        	if (navigator.msSaveBlob) {
+        		navigator.msSaveBlob(csvData, exportFilename);
+        	} else {
+        		var link = document.createElement('a');
+        		link.href = window.URL.createObjectURL(csvData);
+        		link.setAttribute('download', exportFilename);
+        		document.body.appendChild(link);
+        		link.click();
+        		document.body.removeChild(link);
+        	};
+        };
+        function jsonToCSV (data) {
+        	var columns = data.reduce(function(result,d){
+         		Object.keys(d).forEach(function(key){
+        		    result.add(key);
+          	});
+          	return result;
+        	},new Set());
+        	return [...columns].join("\t") + data.reduce(function(result,d) {
+         		result += "\n" + [...columns].map(function (key) {
+                    if(typeof d[key] == "number"){
+                        return d[key];
+                    }else if(typeof d[key] == "string"){
+                        return d[key]
+                    }
+                    return "";
+               }).join("\t");
+                return result;
+        	},"");
+        }
         //Override function defaults if UI inputs are provided.
 
         function mapInputsToSettings(inputs,formData) {
@@ -305,38 +371,25 @@
             if (!formData) { return getHelp(inputs) };
             //Customize Function Here
             var settings = mapInputsToSettings(inputs,formData);
-            var text = getNodeText("body");
+            var text = getNodeData("body","innerText");
             var sentences = getSentences(text, settings);
             var sentenceListStr = sentences.join("\n");
             updateDisplay("textArea1",sentenceListStr);
           },
-          func5: function(formData) {
+          extractNodeData: function(formData) {
             //update ui to provide feedback - what does the function expect? Which inputs are mapped to each controlled variable?
             var inputs = {
               a: {
-                url: "https://duckduckgo.com"
-              },
-              b: {
-                param: "p=2"
-              },
-              c: {
-                param: "q=yoyo"
-              },
-              x: {
-                length: 10
-              },
-              y: {
-                width: 10
-              },
-              z: {
-                height: 10
-              },
+                selector: "a"
+              }
             }
             if (!formData) {
               return getHelp(inputs)
             };
             var settings = mapInputsToSettings(inputs,formData);
             //Customize Function Here
+            updateDisplay("textArea1",jsonToCSV(processNodeList(settings.selector)))
+
             return `Completed Running: ${formData}`;
           }
         };
@@ -431,7 +484,6 @@
 .customResponsiveInjection [class*="col-"] {
   width: 100%;
   min-height:30px;
-  max-height:200px;
   float: left;
   outline: 1px solid black;
   outline-offset: -1px;
