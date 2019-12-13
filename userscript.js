@@ -5,6 +5,63 @@
 // @include       *
 // @run-at document-end
 // ==/UserScript==
+function createCollectionFromCSV (csvObj) {
+	return {
+		fileName:csvObj.fileName,
+		data:d3.csvParse(csvObj.dataString) // Don't pre-process rows
+		//data:d3.csvParse(csvObj.dataString, processRow) // pre-process rows (if data cleanup required)
+	}
+}
+
+
+function fileInputToString (inputFile) {
+	var fileName = inputFile.name.replace(".csv","").replace(/[\s\n\r\t]/gi,"-").replace(/[^a-z0-9-]/gi,"");
+    const fr = new FileReader();
+	return new Promise((resolve, reject) => {
+		fr.onerror = () => {
+			fr.abort();
+			reject(new DOMException("Problem parsing input file."));
+		}
+		fr.onload = () => {
+			resolve({
+				dataString: fr.result,
+				fileName: fileName
+			})
+		}
+		fr.readAsText(inputFile);
+    })
+}
+
+async function dropHandler(ev) {
+  console.log('File(s) dropped');
+
+  // Prevent default behavior (Prevent file from being opened)
+  ev.preventDefault();
+  var i;
+  if (ev.dataTransfer.items) {
+    // Use DataTransferItemList interface to access the file(s)
+    for (i = 0; i < ev.dataTransfer.items.length; i++) {
+      // If dropped items aren't files, reject them
+      if (ev.dataTransfer.items[i].kind === 'file') {
+        var file = ev.dataTransfer.items[i].getAsFile();
+        var csvString = await fileInputToString(file);
+        var data = await createCollectionFromCSV(csvString);
+        var textArea1 = await document.querySelector("#textArea1");
+        textArea1.value = JSON.stringify(data.data,null,2);
+        console.log({data});
+      }
+    }
+  } else {
+    // Use DataTransfer interface to access the file(s)
+    for (i = 0; i < ev.dataTransfer.files.length; i++) {
+      console.log('... file[' + i + '].name = ' + ev.dataTransfer.files[i].name);
+    }
+  }
+}
+
+
+
+
 (async function() {
   if (window.top != window.self) { //only run on the parent page, not embedded pages/objects
     /*
@@ -588,4 +645,14 @@
     var injectedDivOverlay = document.querySelector("#injectedModalOverlay");
     injectedDivOverlay.addEventListener("click", runFunction)
   }
+
+ //Disables the browser's default behavior, which usually just re-downloads the file dropped... which we don't want.
+window.addEventListener("dragover",function(e){
+  e = e || event;
+  e.preventDefault();
+//console.log("drag over...");
+},false);
+
+//Attaches an event listener to the html tag's ondrop event - triggered by dropping a file anywhere on the page
+document.querySelector("html").ondrop = (event) => dropHandler(event);
 })()
